@@ -1,0 +1,795 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pi-Xfourge: SpacePi X4 firmware patcher</title>
+<meta name="description" content="Drop in the official SpacePi X4 beta firmware and get back a patched .lcd with a 95°C limit and your own boot screen. Runs entirely in your browser.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' x2='1'%3E%3Cstop offset='0' stop-color='%232C8C99'/%3E%3Cstop offset='.6' stop-color='%23F0A53A'/%3E%3Cstop offset='1' stop-color='%23D9452B'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='7' fill='%2318222B'/%3E%3Crect x='6' y='13' width='20' height='6' rx='3' fill='url(%23g)'/%3E%3C/svg%3E">
+<style>
+/*__FONTFACES__*/
+:root{
+  --paper:#F1F4F3; --panel:#FFFFFF; --ink:#18222B; --muted:#56646F; --line:#CBD5D9;
+  --cool:#2C8C99; --warm:#F0A53A; --hot:#D9452B; --hot-text:#B6341B;
+  --ok:#1F7A4D; --bad:#B6341B; --warn-bg:#FBEFE9; --warn-line:#E7B7A8;
+  --bezel:#10161B;
+  --display:"Bricolage Grotesque","Avenir Next Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"Figtree",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#131A20; --panel:#1B252D; --ink:#E8EEF1; --muted:#9BA9B3; --line:#2D3944;
+    --cool:#3DA6B4; --warm:#F4B04A; --hot:#EC5A3E; --hot-text:#F27A62;
+    --ok:#52C08A; --bad:#F27A62; --warn-bg:#2A1D1B; --warn-line:#6B3A30;
+    --bezel:#0A0E12;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#131A20; --panel:#1B252D; --ink:#E8EEF1; --muted:#9BA9B3; --line:#2D3944;
+  --cool:#3DA6B4; --warm:#F4B04A; --hot:#EC5A3E; --hot-text:#F27A62;
+  --ok:#52C08A; --bad:#F27A62; --warn-bg:#2A1D1B; --warn-line:#6B3A30; --bezel:#0A0E12;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 1.0625rem/1.55 var(--body)}
+main{max-width:46rem;margin:0 auto;padding:3.5rem 1rem 4rem}
+h1,h2,h3{font-family:var(--display);line-height:1.05;margin:0;letter-spacing:-.02em}
+h1{font-size:clamp(3.4rem,13vw,5.6rem);font-weight:800;letter-spacing:-.045em}
+h2{font-size:1.65rem;font-weight:800;margin-bottom:.5rem}
+h3{font-size:1.15rem;font-weight:600;margin-bottom:.35rem;letter-spacing:-.01em}
+p{margin:.5rem 0}
+a{color:inherit;text-decoration-thickness:.08em;text-underline-offset:.18em}
+a:hover{color:var(--hot-text)}
+:focus-visible{outline:3px solid var(--hot);outline-offset:3px;border-radius:4px}
+code,.mono{font-family:ui-monospace,"SFMono-Regular",Consolas,monospace;font-size:.92em}
+.lede{font-size:1.2rem;max-width:34rem;margin-top:1rem}
+.small{font-size:.92rem;color:var(--muted)}
+
+/* ceiling chart */
+.ceiling{margin:2.25rem 0 0;padding:1.25rem 1.25rem 1rem;background:var(--panel);border:1px solid var(--line);border-radius:14px}
+.ceiling figcaption{font:600 .95rem/1.3 var(--body);color:var(--muted);margin-bottom:.9rem}
+.crow{display:grid;grid-template-columns:7.2rem 1fr 3.6rem;align-items:center;gap:.75rem;margin:.55rem 0}
+.crow .who{font-weight:500}
+.crow .deg{font:800 1.35rem/1 var(--display);text-align:right}
+.crow.me .who{font-weight:600}
+.crow.me .deg{color:var(--hot-text)}
+.track{position:relative;height:1.1rem;border-radius:6px;background:color-mix(in srgb,var(--line) 55%,transparent);overflow:hidden}
+.track::after{content:"";position:absolute;top:0;bottom:0;left:76.9%;right:0;
+  background:repeating-linear-gradient(135deg,var(--line) 0 2px,transparent 2px 7px);border-left:2px dashed var(--muted)}
+.track i{position:absolute;inset:0 auto 0 0;width:calc(var(--v) * 1%);border-radius:6px 0 0 6px;
+  background:linear-gradient(90deg,var(--cool),var(--warm) 62%,var(--hot));background-size:calc(10000% / var(--v)) 100%;
+  clip-path:inset(0 100% 0 0);animation:fill .9s cubic-bezier(.2,.7,.2,1) forwards;animation-delay:calc(var(--n) * .14s + .15s);z-index:1}
+@keyframes fill{to{clip-path:inset(0 0 0 0)}}
+.ceiling .note{margin:.8rem 0 0;font-size:.9rem;color:var(--muted)}
+
+.warning{margin:2rem 0 0;border:3px solid #16181A;border-radius:16px;overflow:hidden;background:var(--warn-bg);box-shadow:0 10px 30px color-mix(in srgb,var(--hot) 22%,transparent)}
+.warning::before,.warning::after{content:"";display:block;height:1.25rem;background:repeating-linear-gradient(-45deg,#F5C518 0 16px,#16181A 16px 32px)}
+.warning .inner{display:grid;grid-template-columns:auto 1fr;gap:1.25rem;align-items:start;padding:1.5rem 1.5rem 1.6rem}
+.warning .sign{flex:none;margin-top:.25rem}
+.warning h2{font-size:clamp(2rem,7.5vw,3.4rem);line-height:.98;letter-spacing:-.03em;color:var(--hot-text);margin:0 0 .8rem}
+.warning p{font-size:1.1rem;margin:.45rem 0}
+@media (max-width:30rem){.warning .inner{grid-template-columns:1fr}.warning .sign{width:56px;height:56px}}
+
+/* steps */
+.steps{list-style:none;margin:3rem 0 0;padding:0;counter-reset:step}
+.step{counter-increment:step;position:relative;padding:0 0 2.5rem 0;margin:0 0 2.5rem;border-bottom:1px solid var(--line)}
+.step:last-child{border-bottom:0;margin-bottom:0}
+.step > h2::before{content:counter(step);display:block;font:800 .95rem/1 var(--display);color:var(--hot-text);margin-bottom:.45rem}
+@media (min-width:46rem){
+  .step{padding-left:4.5rem}
+  .step > h2::before{position:absolute;left:0;top:-.15rem;margin:0;font-size:3.2rem;letter-spacing:-.04em;color:var(--line)}
+}
+
+.drop{display:block;border:2px dashed var(--muted);border-radius:14px;padding:1.6rem 1.25rem;text-align:center;background:var(--panel);cursor:pointer;transition:background .15s,border-color .15s}
+.drop:hover,.drop.over{border-color:var(--hot);background:color-mix(in srgb,var(--hot) 7%,var(--panel))}
+.drop:focus-within{outline:3px solid var(--hot);outline-offset:3px}
+.drop input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.drop b{font-family:var(--display);font-size:1.25rem;display:block}
+.drop.loaded{border-style:solid;border-color:var(--ok)}
+.checks{list-style:none;margin:1rem 0 0;padding:0}
+.checks li{display:flex;gap:.6rem;align-items:flex-start;margin:.3rem 0}
+.checks li::before{content:"";flex:none;width:1.1rem;height:1.1rem;margin-top:.22rem;border-radius:50%;background:var(--ok)}
+.checks li.bad::before{background:var(--bad)}
+.checks li.warn::before{background:var(--warm)}
+.checks li.bad{color:var(--bad);font-weight:600}
+details{margin:.9rem 0 0}
+summary{cursor:pointer;font-weight:600}
+details p{margin:.5rem 0 0 1rem}
+
+.choices{display:grid;gap:.75rem;grid-template-columns:1fr;margin:1rem 0}
+@media (min-width:40rem){.choices{grid-template-columns:1fr 1fr}}
+.choice{display:block;padding:.85rem 1rem;border:1px solid var(--line);border-radius:12px;background:var(--panel);cursor:pointer}
+.choice:has(input:checked){border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.choice:has(input:focus-visible){outline:3px solid var(--hot);outline-offset:3px}
+.choice input{margin:0 .5rem 0 0;accent-color:var(--ink)}
+.choice b{font-weight:600}
+.choice span{display:block;margin:.2rem 0 0 1.55rem;font-size:.92rem;color:var(--muted)}
+.opts{display:grid;gap:.9rem 1rem;grid-template-columns:1fr;margin:.5rem 0 1rem}
+@media (min-width:40rem){.opts{grid-template-columns:repeat(3,1fr)}}
+.opts label,.field{display:block;font-weight:600;font-size:.95rem}
+.opts select,.field input[type=file]{display:block;width:100%;margin-top:.3rem;font:400 1rem var(--body);color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:.5rem .6rem}
+.field input[type=file]{padding:.45rem}
+.hidden{display:none !important}
+
+.bezel{display:inline-block;max-width:100%;padding:14px 14px 18px;background:var(--bezel);border-radius:18px;box-shadow:0 0 0 1px var(--line),0 10px 24px rgba(0,0,0,.18)}
+.bezel canvas{display:block;width:min(100%,480px);aspect-ratio:4/3;height:auto;image-rendering:pixelated;border-radius:3px;background:#000}
+.meter{height:.7rem;border-radius:6px;background:color-mix(in srgb,var(--line) 70%,transparent);overflow:hidden;margin:.9rem 0 .3rem;max-width:480px}
+.meter i{display:block;height:100%;width:0;background:var(--ok);transition:width .25s}
+.meter.tight i{background:var(--warm)}
+.meter.over i{background:var(--bad)}
+.errline{color:var(--bad);font-weight:600;margin:.5rem 0 0}
+
+.ack{display:flex;gap:.7rem;align-items:flex-start;padding:1rem 1.1rem;border:1px solid var(--warn-line);background:var(--warn-bg);border-radius:10px;margin:1rem 0}
+.ack input{margin-top:.35rem;width:1.1rem;height:1.1rem;accent-color:var(--hot)}
+.btn{display:inline-block;font:600 1.05rem var(--body);padding:.8rem 1.4rem;border-radius:10px;border:2px solid var(--ink);background:var(--ink);color:var(--paper);cursor:pointer;text-decoration:none}
+.btn:hover:not(:disabled){background:var(--hot);border-color:var(--hot);color:#fff}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.alt{background:transparent;color:var(--ink)}
+.result{margin:1.25rem 0 0;padding:1rem 1.25rem;border:1px solid var(--ok);border-radius:12px;background:var(--panel)}
+.result dl{display:grid;grid-template-columns:auto 1fr;gap:.2rem 1rem;margin:.6rem 0 1rem}
+.result dt{color:var(--muted)}
+.result dd{margin:0;word-break:break-all}
+.status{min-height:1.5rem;margin:.75rem 0 0}
+.status.err{color:var(--bad);font-weight:600}
+
+ol.flash{padding-left:1.3rem;margin:.6rem 0}
+ol.flash li{margin:.45rem 0;padding-left:.2rem}
+
+.checker{margin:3rem 0 0;padding:1.5rem;background:var(--panel);border:1px solid var(--line);border-radius:14px}
+.checker h2{margin-bottom:.35rem}
+.checker .drop{margin-top:1rem;padding:1.1rem 1rem}
+.verdict{margin:1.25rem 0 0;padding:1rem 1.25rem;border:1px solid var(--line);border-left:6px solid var(--muted);border-radius:10px;background:var(--paper)}
+.verdict.ok{border-left-color:var(--ok)}
+.verdict.bad{border-left-color:var(--bad)}
+.verdict.warn{border-left-color:var(--warm)}
+.verdict h3{margin:0 0 .25rem;font-size:1.3rem}
+.verdict.bad h3{color:var(--bad)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:.25rem 1rem;margin:1rem 0 0}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;word-break:break-all}
+.thanks{margin:3.5rem 0 0;padding:1.5rem;background:var(--panel);border:1px solid var(--line);border-radius:14px}
+.thanks .who{display:flex;gap:1rem;align-items:center;margin-bottom:.4rem}
+.thanks .who img{flex:none;width:4.5rem;height:4.5rem;border-radius:50%;border:2px solid var(--line);background:#000}
+.thanks .who h2{margin:0}
+.thanks ul{list-style:none;margin:1rem 0 0;padding:0;display:grid;gap:.6rem}
+.thanks li a{display:block;padding:.75rem 1rem;border:1px solid var(--line);border-radius:10px;text-decoration:none;font-weight:600}
+.thanks li a:hover{border-color:var(--hot);color:var(--ink)}
+.thanks li a span{display:block;font-weight:400;color:var(--muted);font-size:.92rem}
+footer{margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--line);font-size:.92rem;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){
+  .track i{animation:none;clip-path:none}
+  .meter i{transition:none}
+}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>Pi-Xfourge</h1>
+  <p class="lede">Patch your Creality SpacePi X4 dryer to heat to 95°C instead of the factory 85°C, with your own boot screen. Drop in the official beta file, get a new <code>.lcd</code> back. You don't need to flash the beta first. It all runs in this tab, so your file never leaves your computer.</p>
+
+  <section class="warning" aria-labelledby="warn-h">
+    <div class="inner">
+      <svg class="sign" viewBox="0 0 64 64" width="72" height="72" aria-hidden="true"><path d="M32 5 62 58H2Z" fill="#F5C518" stroke="#16181A" stroke-width="4" stroke-linejoin="round"/><rect x="29" y="22" width="6" height="19" rx="3" fill="#16181A"/><circle cx="32" cy="48" r="3.6" fill="#16181A"/></svg>
+      <div>
+        <h2 id="warn-h">Alpha firmware.<br>No warranty.</h2>
+        <p>The firmware's author hasn't finished long-term testing at high temperature. Stay nearby for your first runs, and keep the dryer off flammable surfaces.</p>
+        <p>Read <a href="https://github.com/drxen00/PiXfourge#is-it-safe">Is it safe?</a> before you flash.</p>
+      </div>
+    </div>
+  </section>
+
+  <figure class="ceiling" aria-label="Maximum drying temperature: retail 85 degrees, Creality beta 90 degrees, Pi-Xfourge 95 degrees">
+    <figcaption>Maximum drying temperature, by firmware</figcaption>
+    <div class="crow"><span class="who">Factory</span><div class="track" style="--v:61.5;--n:0"><i></i></div><span class="deg">85°</span></div>
+    <div class="crow"><span class="who">Creality beta</span><div class="track" style="--v:69.2;--n:1"><i></i></div><span class="deg">90°</span></div>
+    <div class="crow me"><span class="who">Pi-Xfourge</span><div class="track" style="--v:76.9;--n:2"><i></i></div><span class="deg">95°</span></div>
+    <p class="note">The hatched zone, above 95°C, hasn't been tested and isn't offered.</p>
+  </figure>
+
+
+</header>
+
+<noscript><p class="errline">Pi-Xfourge needs JavaScript to patch the file. Everything still runs on your own computer.</p></noscript>
+
+<ol class="steps">
+  <li class="step" id="step-file">
+    <h2>Add the official beta file</h2>
+    <label class="drop" id="drop">
+      <input type="file" id="basefile" accept=".lcd">
+      <b id="dropTitle">Drop v0.2.9_3.1_cspx4.lcd here</b>
+      <span class="small" id="dropSub">or click to choose it</span>
+    </label>
+    <ul class="checks" id="checks" aria-live="polite"></ul>
+    <details>
+      <summary>Where do I get this file?</summary>
+      <p>It's the beta build from Creality, named <code>v0.2.9_3.1_cspx4.lcd</code> (4,161,192 bytes). It is not the retail firmware on Creality's download page, and Pi-Xfourge can't patch retail or older files. If you don't have it yet, ask @gunfuzled where to get it.</p>
+    </details>
+  </li>
+
+  <li class="step" id="step-splash">
+    <h2>Pick a boot screen</h2>
+    <p>The dryer shows this for 2 seconds at power-on. The warning line "ALPHA FIRMWARE: NO WARRANTY, EXPRESS OR IMPLIED" is always drawn along the bottom edge.</p>
+    <div class="choices" role="radiogroup" aria-label="Boot screen">
+      <label class="choice"><input type="radio" name="splashmode" value="default" checked><b>Original screen</b><span>The mascot screen from the original firmware project.</span></label>
+      <label class="choice"><input type="radio" name="splashmode" value="custom"><b>My own image</b><span>Any PNG, JPG, GIF or WebP. It's resized to 320×240.</span></label>
+    </div>
+    <div id="customBox" class="hidden">
+      <label class="field">Image
+        <input type="file" id="imgfile" accept="image/*">
+      </label>
+      <div class="opts">
+        <label>Sizing
+          <select id="fit">
+            <option value="fit">Fit the whole image</option>
+            <option value="fill">Fill the screen, crop the edges</option>
+            <option value="asis">Use as-is (must be 320×240)</option>
+          </select>
+        </label>
+        <label>Background
+          <select id="bg">
+            <option value="black">Black</option>
+            <option value="white">White</option>
+            <option value="auto">Match the image's corner</option>
+          </select>
+        </label>
+        <label>Simplify colors
+          <select id="posterize">
+            <option value="0">None</option>
+            <option value="1">Light</option>
+            <option value="2">Medium</option>
+            <option value="3">Strong</option>
+          </select>
+        </label>
+      </div>
+    </div>
+    <div class="bezel"><canvas id="preview" width="320" height="240" aria-label="Preview of the boot screen"></canvas></div>
+    <div class="meter" id="meter"><i id="meterFill"></i></div>
+    <p class="small" id="meterText">Checking space…</p>
+    <p class="errline hidden" id="splashErr"></p>
+    <p class="small">Logos and flat colors take little space. Photos and gradients take a lot; if the meter fills up, raise "Simplify colors".</p>
+  </li>
+
+  <li class="step" id="step-build">
+    <h2>Build the firmware</h2>
+    <label class="ack"><input type="checkbox" id="ack"><span>I understand this is unfinished alpha firmware that lets the heater run hotter than Creality intended, with no warranty, and that I'll stay nearby during early runs.</span></label>
+    <button class="btn" id="build" disabled>Build firmware</button>
+    <p class="status" id="status" role="status" aria-live="polite">Add the beta file in step 1 to begin.</p>
+    <div class="result hidden" id="result">
+      <h3>Your firmware is ready</h3>
+      <dl>
+        <dt>File</dt><dd class="mono" id="outName"></dd>
+        <dt>Size</dt><dd id="outSize"></dd>
+        <dt>SHA-256</dt><dd class="mono" id="outSha"></dd>
+      </dl>
+      <a class="btn" id="download" href="#">Download the .lcd file</a>
+    </div>
+  </li>
+
+  <li class="step" id="step-flash">
+    <h2>Put it on the dryer</h2>
+    <ol class="flash">
+      <li>Format a microSD card as FAT32. If it asks for an allocation unit size, choose 4096 bytes.</li>
+      <li>Copy the new <code>.lcd</code> file to the card's top-level folder. It must be the only <code>.lcd</code> file on the card, so don't copy the original beta next to it.</li>
+      <li>Turn the dryer off, put the card in the display's slot, then turn it on.</li>
+      <li>Wait for the update to finish. When it's done, remove the card, and turn the dryer off and on again if it asks.</li>
+      <li>Check it worked: the About screen should say <b>V3.0.1_0</b>, and the temperature keypad should say "Input range: 45~95".</li>
+    </ol>
+    <h3>Going back to stock</h3>
+    <p>Flash the original <code>v0.2.9_3.1_cspx4.lcd</code>, or a retail file from Creality, the same way.</p>
+  </li>
+</ol>
+
+<section class="checker" aria-labelledby="check-h">
+  <h2 id="check-h">Check any firmware file</h2>
+  <p>Not sure what a <code>.lcd</code> file is, or whether a download got damaged? Drop it here and Pi-Xfourge will tell you what it is and whether its checksums are intact. Nothing is uploaded.</p>
+  <label class="drop" id="drop2">
+    <input type="file" id="checkfile" accept=".lcd">
+    <b id="checkTitle">Drop a .lcd file here</b>
+    <span class="small">or click to choose it</span>
+  </label>
+  <div id="checkOut" class="hidden" aria-live="polite">
+    <div class="verdict" id="verdict">
+      <h3 id="verdictTitle"></h3>
+      <p id="verdictDetail"></p>
+    </div>
+    <ul class="checks" id="facts"></ul>
+    <dl class="kv">
+      <dt>Size</dt><dd id="chkSize"></dd>
+      <dt>SHA-256</dt><dd class="mono" id="chkSha"></dd>
+      <dt id="chkMatchLabel">Matches</dt><dd id="chkMatch"></dd>
+    </dl>
+  </div>
+</section>
+
+<section class="thanks" aria-labelledby="thanks-h">
+  <div class="who"><img src="__LOGO__" alt="confuzled's logo: a cartoon mustached mascot in a tan cap" width="72" height="72"><h2 id="thanks-h">If you'd like to say thanks</h2></div>
+  <p>The reverse-engineering, the temperature limits and the patch are all the work of <b>confuzled</b> (<a href="https://x.com/gunfuzled" rel="noopener">@gunfuzled</a> on X, <a href="https://github.com/confuzled-dev/SpacePiX4_cfw" rel="noopener">confuzled-dev</a> on GitHub). Pi-Xfourge is just a friendlier way to use it. No pressure, but if this saved you time and you're ordering filament or parts anyway, you can support him through his referral links. He earns a commission if you buy through them.</p>
+  <ul>
+    <li><a href="https://siraya.tech/?sca_ref=9774016.2Uf9iip746&amp;sca_source=Confuzled" rel="noopener sponsored" target="_blank">Siraya Tech<span>Referral link</span></a></li>
+    <li><a href="https://shop.polymaker.com/CONFUZLED" rel="noopener sponsored" target="_blank">Polymaker<span>Referral link</span></a></li>
+    <li><a href="https://voidspec.com/aff/1/" rel="noopener sponsored" target="_blank">VoidSpec<span>Referral link. Use code <b>POOPMAN</b> for 10% off.</span></a></li>
+  </ul>
+</section>
+
+<footer>
+  <p>Pi-Xfourge is an unofficial community tool and isn't affiliated with Creality. It adapts the build script from <a href="https://github.com/confuzled-dev/SpacePiX4_cfw" rel="noopener">confuzled-dev/SpacePiX4_cfw</a>. Your files are processed in your browser and are never uploaded. Provided as is, with no warranty. <a href="https://github.com/drxen00/PiXfourge" rel="noopener">Source code</a>.</p>
+</footer>
+</main>
+
+<script>
+(() => {
+'use strict';
+
+/* ---------- constants (from confuzled-dev/SpacePiX4_cfw scripts/build_3.0.1_0.js) ---------- */
+const BASE_SIZE = 4161192;
+const MCU_OFF = 0x3F256C;
+const PIC_TBL = 0x054A31;
+const SPLASH_OFF = 0x301180;
+const REGION_END = 0x310000;
+const REGION_LEN = REGION_END - SPLASH_OFF;          // 61,056 bytes of unused padding
+const KNOWN_SHA = ['012e12bc4cc7cd86b4f0226d3a4624b83e01a9770085327af31e2f809f91435a'];
+const OUT_NAME = 'v3.0.1_0_cspx4_cfw.lcd';
+const DISCLAIMER = 'ALPHA FIRMWARE: NO WARRANTY, EXPRESS OR IMPLIED';
+const DEFAULT_SPLASH = '__DEFAULT_SPLASH__';
+
+/*__FONT__*/
+
+/* ---------- low-level helpers ---------- */
+function nextionCrc(buf, start, end, init = 0xFFFFFFFF) {
+  let crc = init >>> 0;
+  for (let i = start; i < end; i++) {
+    crc ^= buf[i];
+    for (let b = 0; b < 32; b++) {
+      if (crc & 0x80000000) crc = (((crc << 1) ^ 0x04C11DB7) >>> 0);
+      else crc = ((crc << 1) >>> 0);
+    }
+  }
+  return crc >>> 0;
+}
+
+function toRgb565(r, g, b, drop) {
+  const r5 = ((r >> 3) >> drop) << drop;
+  const g6 = ((g >> 2) >> drop) << drop;
+  const b5 = ((b >> 3) >> drop) << drop;
+  return (r5 << 11) | (g6 << 5) | b5;
+}
+
+function drawTextCentered(rows, text, y, color, spacing = 6) {
+  const outW = rows[0].length;
+  const textW = text.length * spacing - (spacing - 5);
+  const startX = Math.floor((outW - textW) / 2);
+  for (let i = 0; i < text.length; i++) {
+    const glyph = FONT_5X7[text[i]] || FONT_5X7[' '];
+    const cx = startX + i * spacing;
+    for (let gy = 0; gy < 7; gy++) {
+      const bits = glyph[gy];
+      const py = y + gy;
+      if (py < 0 || py >= rows.length) continue;
+      for (let gx = 0; gx < 5; gx++) {
+        if ((bits >>> (4 - gx)) & 1) {
+          const px = cx + gx;
+          if (px >= 0 && px < outW) rows[py][px] = color;
+        }
+      }
+    }
+  }
+}
+
+function encodePicRle(rows) {
+  const h = rows.length, w = rows[0].length;
+  const cols = new Array(8).fill(0);
+  const blocks = [], lineBlockStarts = [], lineCountStarts = [], counts = [];
+  for (let y = 0; y < h; y++) {
+    const row = rows[y];
+    lineBlockStarts.push(0x10 + blocks.length * 20);
+    lineCountStarts.push(counts.length);
+    let x = 0;
+    while (x < w) {
+      const runs = [0, 0, 0, 0, 0, 0, 0, 0];
+      let totalRun = 0;
+      for (let slot = 0; slot < 8; slot++) {
+        if (x >= w) break;
+        const maxRun = (slot === 0) ? 14 : 15;
+        const c = row[x];
+        let run = 0;
+        while (x < w && row[x] === c && run < maxRun) { run++; x++; }
+        runs[slot] = run;
+        cols[slot] = c;
+        totalRun += run;
+      }
+      let mask = 0;
+      if (runs.every(r => r === 1)) {
+        mask = 0x1111111F;
+      } else {
+        for (let slot = 0; slot < 8; slot++) mask = (mask | ((runs[slot] & 0xF) << (slot * 4))) >>> 0;
+      }
+      const blk = new Uint8Array(20);
+      const bv = new DataView(blk.buffer);
+      bv.setUint32(0, mask >>> 0, true);
+      for (let slot = 0; slot < 8; slot++) bv.setUint16(4 + slot * 2, cols[slot] & 0xFFFF, true);
+      blocks.push(blk);
+      counts.push(totalRun);
+    }
+  }
+  const tblOffset = 0x10 + blocks.length * 20;
+  const ctlOffset = tblOffset + h * 8;
+  const out = new Uint8Array(ctlOffset + counts.length + 4);
+  const ov = new DataView(out.buffer);
+  ov.setUint32(0, tblOffset + 4, true);
+  for (let i = 0; i < blocks.length; i++) out.set(blocks[i], 0x10 + i * 20);
+  for (let y = 0; y < h; y++) {
+    ov.setUint32(tblOffset + y * 8, lineBlockStarts[y] + 4, true);
+    ov.setUint32(tblOffset + y * 8 + 4, ctlOffset + lineCountStarts[y] + 4, true);
+  }
+  for (let i = 0; i < counts.length; i++) out[ctlOffset + i] = counts[i];
+  ov.setUint32(out.length - 4, 1, true);
+  return { buf: out, numBlocks: blocks.length };
+}
+
+function decodePicRle(pic, w = 320, h = 240) {
+  const dv = new DataView(pic.buffer, pic.byteOffset, pic.byteLength);
+  const tblOff = dv.getUint32(0, true) - 4;
+  const rows = [];
+  for (let y = 0; y < h; y++) {
+    const p1 = dv.getUint32(tblOff + y * 8, true) - 4;
+    const p2 = dv.getUint32(tblOff + y * 8 + 4, true) - 4;
+    const nextP2 = (y < h - 1) ? (dv.getUint32(tblOff + (y + 1) * 8 + 4, true) - 4) : (pic.length - 4);
+    const numBlocks = nextP2 - p2;
+    const row = [];
+    for (let b = 0; b < numBlocks; b++) {
+      const blkOff = p1 + b * 20;
+      const mask = dv.getUint32(blkOff, true);
+      for (let i = 0; i < 8; i++) {
+        const run = (mask === 0x1111111F) ? 1 : ((mask >>> (i * 4)) & 0xF);
+        if (run === 0) continue;
+        const c = dv.getUint16(blkOff + 4 + i * 2, true);
+        for (let r = 0; r < run; r++) row.push(c);
+      }
+    }
+    rows.push(row.slice(0, w));
+  }
+  return rows;
+}
+
+/* ---------- checking the base file ---------- */
+function inspectBase(u8) {
+  const items = [];
+  let fatal = null;
+  const add = (kind, text) => items.push({ kind, text });
+  if (u8.length !== BASE_SIZE) {
+    add('bad', `File size is ${u8.length.toLocaleString()} bytes. The beta is exactly ${BASE_SIZE.toLocaleString()} bytes.`);
+    fatal = 'size';
+  } else {
+    add('ok', `File size is ${BASE_SIZE.toLocaleString()} bytes`);
+    const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+    const alreadyPatched = dv.getUint32(0x310054, true) === 95;
+    const checks = [
+      dv.getUint32(0x3C, true) === MCU_OFF,
+      dv.getUint32(0x310054, true) === 90,
+      u8[0x312BDD] === 0x56,
+      String.fromCharCode(u8[0x351852], u8[0x351853], u8[0x351854], u8[0x351855]) === '_3.1',
+      u8[MCU_OFF + 0x18DE] === 0x5A && u8[MCU_OFF + 0x18DF] === 0x25,
+      u8[MCU_OFF + 0x18F4] === 0x5A && u8[MCU_OFF + 0x18F5] === 0x2A,
+      u8[MCU_OFF + 0x49C0] === 0x00 && u8[MCU_OFF + 0x49C1] === 0x02 && u8[MCU_OFF + 0x49C2] === 0x09
+    ];
+    if (checks.every(Boolean)) {
+      add('ok', 'Firmware layout matches v0.2.9_3.1_cspx4, so every patch location checks out');
+    } else if (alreadyPatched) {
+      add('bad', 'This file already has the 95°C patch. Use the original beta file instead.');
+      fatal = 'patched';
+    } else {
+      add('bad', "This isn't the v0.2.9_3.1_cspx4 beta, so the patch locations don't line up. Retail and older firmware can't be patched.");
+      fatal = 'layout';
+    }
+    if (!fatal) {
+      let zero = true;
+      for (let i = SPLASH_OFF; i < REGION_END; i++) if (u8[i] !== 0) { zero = false; break; }
+      if (zero) add('ok', 'The free space for the boot screen is empty');
+      else { add('bad', 'The space reserved for the boot screen already has data in it. Stopping so nothing gets overwritten.'); fatal = 'region'; }
+    }
+  }
+  return { items, fatal };
+}
+
+/* ---------- build ---------- */
+function buildFirmware(base, rows, enc) {
+  const lcd = new Uint8Array(base);
+  const dv = new DataView(lcd.buffer);
+  if (enc.buf.length > REGION_LEN) throw new Error('The boot screen is too big for the free space.');
+
+  // boot screen into free padding, and repoint picture 81 at it
+  lcd.set(enc.buf, SPLASH_OFF);
+  const p81 = PIC_TBL + 81 * 24;
+  dv.setUint32(p81 + 4, SPLASH_OFF - PIC_TBL, true);
+  dv.setUint32(p81 + 12, enc.buf.length, true);
+
+  // UI max temp 90 -> 95
+  dv.setUint32(0x310054, 95, true);
+  // version strings
+  const ver = 'V3.0.1_0\0';
+  for (let i = 0; i < ver.length; i++) lcd[0x3517D3 + i] = ver.charCodeAt(i);
+  lcd.set([0x5F, 0x30, 0x00, 0x00], 0x351852);
+  // MCU max temp clamp 90 -> 95 and version 0.2.9 -> 3.0.1
+  lcd[MCU_OFF + 0x18DE] = 0x5F;
+  lcd[MCU_OFF + 0x18F4] = 0x5F;
+  lcd[MCU_OFF + 0x49C0] = 0x03; lcd[MCU_OFF + 0x49C1] = 0x00; lcd[MCU_OFF + 0x49C2] = 0x01;
+
+  // checksums, in the original order
+  dv.setUint32(0x08, nextionCrc(lcd, MCU_OFF, lcd.length), true);
+  dv.setUint32(0xC4, nextionCrc(lcd, 0x00, 0xC4), true);
+  dv.setUint32(0x18C, nextionCrc(lcd, 0xC8, 0x18C), true);
+  const mask = lcd[0x03] ^ lcd[0x2E] ^ lcd[0x3C];
+  dv.setUint32(MCU_OFF - 4, (nextionCrc(lcd, 0x00, MCU_OFF - 4) ^ mask) >>> 0, true);
+
+  // read the boot screen back out of the finished file and compare it to what was intended
+  const relOff = dv.getUint32(p81 + 4, true), len = dv.getUint32(p81 + 12, true);
+  const back = decodePicRle(lcd.subarray(PIC_TBL + relOff, PIC_TBL + relOff + len));
+  for (let y = 0; y < 240; y++) for (let x = 0; x < 320; x++) {
+    if (back[y][x] !== rows[y][x]) throw new Error('Self-check failed: the boot screen did not read back correctly.');
+  }
+  return lcd;
+}
+
+/* ---------- boot screen preparation ---------- */
+const $ = s => document.querySelector(s);
+const state = { base: null, baseOk: false, defaultImg: null, customImg: null, rows: null, enc: null, splashOk: false, outUrl: null };
+
+function loadImage(src) {
+  return new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error('That file could not be read as an image.')); im.src = src; });
+}
+
+function prepareSplash() {
+  const custom = document.querySelector('input[name=splashmode]:checked').value === 'custom';
+  const img = custom ? state.customImg : state.defaultImg;
+  const errEl = $('#splashErr');
+  errEl.classList.add('hidden');
+  if (!img) { state.rows = null; state.enc = null; state.splashOk = false; paintPreview(); updateMeter(); return; }
+  const w = img.naturalWidth, h = img.naturalHeight;
+  const mode = custom ? $('#fit').value : 'asis';
+  const bgSel = custom ? $('#bg').value : 'black';
+  const drop = custom ? parseInt($('#posterize').value, 10) : 0;
+  if (!w || !h) { return failSplash('Could not read that image’s size. Try a PNG or JPG.'); }
+  if (mode === 'asis' && (w !== 320 || h !== 240)) {
+    return failSplash(`That image is ${w}×${h}. "Use as-is" needs exactly 320×240. Choose Fit or Fill instead, or resize the image.`);
+  }
+  let bg = '#000';
+  if (bgSel === 'white') bg = '#fff';
+  else if (bgSel === 'auto') {
+    const t = document.createElement('canvas'); t.width = 64; t.height = 64;
+    const tg = t.getContext('2d', { willReadFrequently: true });
+    tg.drawImage(img, 0, 0, 64, 64);
+    const p = tg.getImageData(0, 0, 1, 1).data;
+    bg = `rgb(${p[0]},${p[1]},${p[2]})`;
+  }
+  const c = document.createElement('canvas'); c.width = 320; c.height = 240;
+  const g = c.getContext('2d', { willReadFrequently: true });
+  g.fillStyle = bg; g.fillRect(0, 0, 320, 240);
+  g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+  if (mode === 'asis') g.drawImage(img, 0, 0);
+  else if (mode === 'fit') {
+    const s = Math.min(320 / w, 224 / h), dw = Math.max(1, Math.round(w * s)), dh = Math.max(1, Math.round(h * s));
+    g.drawImage(img, Math.round((320 - dw) / 2), Math.round((224 - dh) / 2), dw, dh);
+  } else {
+    const s = Math.max(320 / w, 240 / h), dw = Math.round(w * s), dh = Math.round(h * s);
+    g.drawImage(img, Math.round((320 - dw) / 2), Math.round((240 - dh) / 2), dw, dh);
+  }
+  const data = g.getImageData(0, 0, 320, 240).data;
+  const rows = [];
+  for (let y = 0; y < 240; y++) {
+    const row = new Uint16Array(320);
+    for (let x = 0; x < 320; x++) { const i = (y * 320 + x) * 4; row[x] = toRgb565(data[i], data[i + 1], data[i + 2], drop); }
+    rows.push(row);
+  }
+  // pick a warning-text color that reads against the bottom strip
+  let lum = 0, n = 0;
+  for (let y = 224; y < 240; y++) for (let x = 0; x < 320; x++) {
+    const col = rows[y][x];
+    const r = ((col >> 11) & 31) << 3, gg = ((col >> 5) & 63) << 2, b = (col & 31) << 3;
+    lum += 0.299 * r + 0.587 * gg + 0.114 * b; n++;
+  }
+  const light = (lum / n) > 128;
+  const textColor = light ? toRgb565(190, 70, 0, 0) : toRgb565(255, 195, 70, 0);
+  drawTextCentered(rows, DISCLAIMER, 227, textColor, 6);
+  state.rows = rows;
+  state.enc = encodePicRle(rows);
+  state.splashOk = state.enc.buf.length <= REGION_LEN;
+  paintPreview();
+  updateMeter();
+}
+
+function failSplash(msg) {
+  state.rows = null; state.enc = null; state.splashOk = false;
+  const e = $('#splashErr'); e.textContent = msg; e.classList.remove('hidden');
+  paintPreview(); updateMeter();
+}
+
+function paintPreview() {
+  const cv = $('#preview'); const g = cv.getContext('2d');
+  g.fillStyle = '#000'; g.fillRect(0, 0, 320, 240);
+  if (!state.rows) return;
+  const im = g.createImageData(320, 240);
+  for (let y = 0; y < 240; y++) for (let x = 0; x < 320; x++) {
+    const col = state.rows[y][x], i = (y * 320 + x) * 4;
+    const r5 = (col >> 11) & 31, g6 = (col >> 5) & 63, b5 = col & 31;
+    im.data[i] = (r5 << 3) | (r5 >> 2); im.data[i + 1] = (g6 << 2) | (g6 >> 4); im.data[i + 2] = (b5 << 3) | (b5 >> 2); im.data[i + 3] = 255;
+  }
+  g.putImageData(im, 0, 0);
+}
+
+function updateMeter() {
+  const m = $('#meter'), f = $('#meterFill'), t = $('#meterText');
+  m.classList.remove('tight', 'over');
+  if (!state.enc) { f.style.width = '0'; t.textContent = 'No boot screen yet.'; refreshBuild(); return; }
+  const used = state.enc.buf.length, pct = used / REGION_LEN * 100;
+  f.style.width = Math.min(100, pct) + '%';
+  if (pct > 100) { m.classList.add('over'); t.textContent = `Too big: ${used.toLocaleString()} bytes, and only ${REGION_LEN.toLocaleString()} fit. Raise "Simplify colors" or use a simpler image.`; }
+  else { if (pct > 85) m.classList.add('tight'); t.textContent = `Space used: ${used.toLocaleString()} of ${REGION_LEN.toLocaleString()} bytes (${pct.toFixed(0)}%)`; }
+  refreshBuild();
+}
+
+/* ---------- wiring ---------- */
+function setStatus(msg, err) { const s = $('#status'); s.textContent = msg; s.classList.toggle('err', !!err); }
+
+function refreshBuild() {
+  const ok = state.baseOk && state.splashOk && $('#ack').checked;
+  $('#build').disabled = !ok;
+  if (state.outUrl) return;
+  if (!state.baseOk) setStatus('Add the beta file in step 1 to begin.');
+  else if (!state.splashOk) setStatus('Fix the boot screen in step 2 to continue.');
+  else if (!$('#ack').checked) setStatus('Tick the box above to enable the build.');
+  else setStatus('Ready to build.');
+}
+
+function invalidateResult() {
+  if (state.outUrl) { URL.revokeObjectURL(state.outUrl); state.outUrl = null; }
+  $('#result').classList.add('hidden');
+}
+
+async function sha256Hex(u8) {
+  if (!(window.crypto && crypto.subtle)) return null;
+  const d = await crypto.subtle.digest('SHA-256', u8);
+  return Array.from(new Uint8Array(d)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function handleBase(file) {
+  invalidateResult();
+  const list = $('#checks'); list.innerHTML = '';
+  state.baseOk = false; state.base = null;
+  $('#drop').classList.remove('loaded');
+  if (!file) { refreshBuild(); return; }
+  const u8 = new Uint8Array(await file.arrayBuffer());
+  const { items, fatal } = inspectBase(u8);
+  if (!fatal) {
+    const sha = await sha256Hex(u8);
+    if (sha) items.push(KNOWN_SHA.includes(sha) ? { kind: 'ok', text: 'Fingerprint (SHA-256) matches the beta the patch was written against' } : { kind: 'warn', text: 'Fingerprint differs from the known beta, but every patch location still checks out, so it should be fine' });
+  }
+  for (const it of items) { const li = document.createElement('li'); li.className = it.kind === 'ok' ? '' : it.kind; li.textContent = it.text; list.appendChild(li); }
+  $('#dropTitle').textContent = file.name;
+  $('#dropSub').textContent = `${u8.length.toLocaleString()} bytes`;
+  if (!fatal) { state.base = u8; state.baseOk = true; $('#drop').classList.add('loaded'); }
+  refreshBuild();
+}
+
+function wireDrop(zone, input, handler) {
+  input.addEventListener('change', e => handler(e.target.files[0]));
+  ['dragenter', 'dragover'].forEach(ev => zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(ev => zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.remove('over'); }));
+  zone.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if (f) handler(f); });
+}
+wireDrop($('#drop'), $('#basefile'), handleBase);
+window.addEventListener('dragover', e => e.preventDefault());
+window.addEventListener('drop', e => e.preventDefault());
+
+/* ---------- "check any firmware file" ---------- */
+const KNOWN_BUILDS = {
+  '012e12bc4cc7cd86b4f0226d3a4624b83e01a9770085327af31e2f809f91435a': 'the stock Creality beta, exactly',
+  '9edddccb3a0b775de31e440a51aa5b0674d9ed0941ab5d90c48d6ef38efe3054': 'a Pi-Xfourge build with the original boot screen, exactly'
+};
+const OLD_SIZES = { 4440664: 'v0.2.5_0.5', 4441828: 'v0.3.0_0.7', 4441816: 'v0.3.0_0.8', 4444236: 'v0.2.9_1.1_cspx4' };
+
+function analyzeFirmware(u8) {
+  const facts = [], problems = [];
+  if (u8.length !== BASE_SIZE) {
+    const old = OLD_SIZES[u8.length];
+    return { kind: 'warn', facts, title: old ? `Looks like an older Creality firmware (${old})` : "This isn't a firmware file Pi-Xfourge recognizes",
+      detail: old ? 'It matches that release by file size only. Pi-Xfourge can only patch v0.2.9_3.1_cspx4, so this one can\u2019t be used here.'
+                  : `It's ${u8.length.toLocaleString()} bytes. The files Pi-Xfourge works with are ${BASE_SIZE.toLocaleString()} bytes.` };
+  }
+  const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+  if (dv.getUint32(0x3C, true) !== MCU_OFF) {
+    return { kind: 'warn', facts, title: "Right size, but not a layout Pi-Xfourge recognizes", detail: 'The internal layout is different from v0.2.9_3.1_cspx4, so it can\u2019t be checked or patched here.' };
+  }
+  const ui = dv.getUint32(0x310054, true);
+  const m1 = u8[MCU_OFF + 0x18DE], m1ok = u8[MCU_OFF + 0x18DF] === 0x25;
+  const m2 = u8[MCU_OFF + 0x18F4], m2ok = u8[MCU_OFF + 0x18F5] === 0x2A;
+  const ver = `${u8[MCU_OFF + 0x49C0]}.${u8[MCU_OFF + 0x49C1]}.${u8[MCU_OFF + 0x49C2]}`;
+  facts.push(['ok', `Display limit: ${ui}°C`]);
+  facts.push([m1ok && m2ok ? 'ok' : 'bad', m1ok && m2ok ? `Heater controller limits: ${m1}°C and ${m2}°C` : 'Heater controller code isn\u2019t in the expected shape']);
+  facts.push(['ok', `Version: ${ver}`]);
+  if (!(m1ok && m2ok)) problems.push('The heater controller code isn\u2019t in the expected shape.');
+  else if (new Set([ui, m1, m2]).size > 1) problems.push(`The display limit (${ui}°C) and the heater controller limits (${m1}°C, ${m2}°C) disagree, so the screen could let you set a temperature the heater refuses.`);
+
+  const mask = u8[0x03] ^ u8[0x2E] ^ u8[0x3C];
+  const crcs = [
+    ['heater controller section', nextionCrc(u8, MCU_OFF, u8.length), dv.getUint32(0x08, true)],
+    ['header 1', nextionCrc(u8, 0x00, 0xC4), dv.getUint32(0xC4, true)],
+    ['header 2', nextionCrc(u8, 0xC8, 0x18C), dv.getUint32(0x18C, true)],
+    ['display section', (nextionCrc(u8, 0x00, MCU_OFF - 4) ^ mask) >>> 0, dv.getUint32(MCU_OFF - 4, true)]
+  ];
+  const bad = crcs.filter(c => c[1] !== c[2]).map(c => c[0]);
+  if (bad.length) { facts.push(['bad', `Checksum mismatch in: ${bad.join(', ')}`]); problems.push('The checksums don\u2019t match, so the file is damaged or was edited by hand.'); }
+  else facts.push(['ok', 'All four checksums are intact']);
+
+  if (problems.length) return { kind: 'bad', facts, title: "Don't flash this file", detail: problems.join(' ') };
+  if (ui === 90 && ver === '0.2.9') return { kind: 'ok', facts, title: 'Creality beta v0.2.9_3.1_cspx4, unmodified', detail: 'This is the starting point for step 1. Flash it only if you want to go back to the beta.' };
+  if (ui === 95 && ver === '3.0.1') return { kind: 'ok', facts, title: 'Patched firmware 3.0.1_0 with a 95°C limit', detail: 'This is a Pi-Xfourge / confuzled-dev build and its checksums are good. It\u2019s ready to flash.' };
+  return { kind: 'warn', facts, title: 'Right layout, but unfamiliar values', detail: 'The checksums are fine, but the limits and version don\u2019t match any build Pi-Xfourge knows.' };
+}
+
+async function handleCheck(file) {
+  const out = $('#checkOut');
+  if (!file) { out.classList.add('hidden'); return; }
+  $('#checkTitle').textContent = file.name;
+  out.classList.remove('hidden');
+  const v = $('#verdict'); v.className = 'verdict';
+  $('#verdictTitle').textContent = 'Checking…'; $('#verdictDetail').textContent = 'Working out the checksums takes a second or two.';
+  $('#facts').innerHTML = ''; $('#chkSize').textContent = ''; $('#chkSha').textContent = ''; $('#chkMatch').textContent = '';
+  await new Promise(r => setTimeout(r, 40));
+  const u8 = new Uint8Array(await file.arrayBuffer());
+  const r = analyzeFirmware(u8);
+  v.className = 'verdict ' + r.kind;
+  $('#verdictTitle').textContent = r.title; $('#verdictDetail').textContent = r.detail;
+  for (const [kind, text] of r.facts) { const li = document.createElement('li'); li.className = kind === 'ok' ? '' : kind; li.textContent = text; $('#facts').appendChild(li); }
+  $('#chkSize').textContent = `${u8.length.toLocaleString()} bytes`;
+  const sha = await sha256Hex(u8);
+  $('#chkSha').textContent = sha || 'not available in this browser';
+  $('#chkMatch').textContent = (sha && KNOWN_BUILDS[sha]) || "No known build. That's normal for a custom boot screen.";
+}
+wireDrop($('#drop2'), $('#checkfile'), handleCheck);
+
+document.querySelectorAll('input[name=splashmode]').forEach(r => r.addEventListener('change', () => {
+  const custom = document.querySelector('input[name=splashmode]:checked').value === 'custom';
+  $('#customBox').classList.toggle('hidden', !custom);
+  invalidateResult(); prepareSplash();
+}));
+['#fit', '#bg', '#posterize'].forEach(id => $(id).addEventListener('change', () => { invalidateResult(); prepareSplash(); }));
+$('#imgfile').addEventListener('change', async e => {
+  const f = e.target.files[0]; invalidateResult();
+  if (!f) { state.customImg = null; prepareSplash(); return; }
+  try {
+    const url = URL.createObjectURL(f);
+    state.customImg = await loadImage(url);
+  } catch (err) { state.customImg = null; failSplash(err.message); return; }
+  prepareSplash();
+});
+$('#ack').addEventListener('change', refreshBuild);
+
+$('#build').addEventListener('click', async () => {
+  invalidateResult();
+  $('#build').disabled = true;
+  setStatus('Building. This takes a few seconds…');
+  await new Promise(r => setTimeout(r, 40));
+  try {
+    const out = buildFirmware(state.base, state.rows, state.enc);
+    const blob = new Blob([out], { type: 'application/octet-stream' });
+    state.outUrl = URL.createObjectURL(blob);
+    const a = $('#download'); a.href = state.outUrl; a.download = OUT_NAME;
+    $('#outName').textContent = OUT_NAME;
+    $('#outSize').textContent = `${out.length.toLocaleString()} bytes`;
+    const sha = await sha256Hex(out);
+    $('#outSha').textContent = sha || 'not available in this browser';
+    $('#result').classList.remove('hidden');
+    setStatus('Done. Download it below, then follow step 4.');
+  } catch (err) {
+    setStatus(err.message || String(err), true);
+  }
+  $('#build').disabled = !(state.baseOk && state.splashOk && $('#ack').checked);
+});
+
+loadImage(DEFAULT_SPLASH).then(im => { state.defaultImg = im; prepareSplash(); }).catch(() => failSplash('The built-in boot screen failed to load.'));
+refreshBuild();
+})();
+</script>
+</body>
+</html>

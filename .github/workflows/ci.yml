@@ -51,3 +51,6 @@ jobs:
             if (/fonts\\.(googleapis|gstatic)/.test(h)) throw new Error('index.html should not load outside fonts');
             console.log('index.html script parses and loads nothing external');
           "
+
+      - name: Check that index.html matches its template
+        run: python3 site/build.py --check
