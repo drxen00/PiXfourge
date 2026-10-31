@@ -9,6 +9,7 @@ const { execFileSync } = require('child_process');
 const { makeBase } = require('./make-fixture.cjs');
 const ROOT = path.resolve(__dirname, '..');
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'pixfourge-'));
+process.on('exit', () => fs.rmSync(TMP, { recursive: true, force: true }));
 const sha = p => crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex');
 // SHA-256 of the real beta, and of the output built from it with the default boot screen
 const BETA_SHA = '012e12bc4cc7cd86b4f0226d3a4624b83e01a9770085327af31e2f809f91435a';
@@ -27,7 +28,7 @@ function referenceBuild(base) {
   fs.copyFileSync(path.join(ROOT, 'scripts', 'build_3.0.1_0.js'), path.join(t, 'scripts', 'build_3.0.1_0.js'));
   fs.copyFileSync(path.join(ROOT, 'assets', 'splash_source.png'), path.join(t, 'assets', 'splash_source.png'));
   fs.copyFileSync(base, path.join(t, 'firmware', 'v0.2.9_3.1_cspx4.lcd'));
-  execFileSync(process.execPath, [path.join(t, 'scripts', 'build_3.0.1_0.js')], { stdio: 'ignore' });
+  execFileSync(process.execPath, [path.join(t, 'scripts', 'build_3.0.1_0.js')]);   // its errors still reach stderr
   return path.join(t, 'firmware', 'v3.0.1_0_cspx4_cfw.lcd');
 }
 
@@ -70,6 +71,6 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   ok(/isn't a firmware file/.test(await check(path.join(ROOT, 'index.html'))), 'checker: a random file is not recognised');
   ok(outside.length === 0, 'the page makes no outside network requests');
   ok(errs.length === 0, 'no page errors');
-  await b.close(); fs.rmSync(TMP, { recursive: true, force: true });
+  await b.close();
   console.log(fails ? `${fails} FAILED` : 'ALL PASSED'); process.exit(fails ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(2); });
