@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 300" width="900" height="300" role="img" aria-labelledby="bt bd" font-family="'Segoe UI',Helvetica,Arial,sans-serif">
+  <title id="bt">PiXfourge</title>
+  <desc id="bd">SpacePi X4 firmware patcher. Maximum drying temperature: factory firmware 85 degrees, Creality beta 90 degrees, PiXfourge 95 degrees. Above 95 is untested.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1C2833"/><stop offset="1" stop-color="#121A21"/></linearGradient>
+    <linearGradient id="heat" gradientUnits="userSpaceOnUse" x1="560" y1="0" x2="810" y2="0"><stop offset="0" stop-color="#2C8C99"/><stop offset=".62" stop-color="#F0A53A"/><stop offset="1" stop-color="#D9452B"/></linearGradient>
+    <pattern id="hatch" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="3" height="9" fill="#6B7A86" opacity=".6"/></pattern>
+  </defs>
+  <rect width="900" height="300" rx="20" fill="url(#bg)"/>
+  <rect x="1" y="1" width="898" height="298" rx="19" fill="none" stroke="#2D3944" stroke-width="2"/>
+
+  <text x="52" y="124" font-size="76" font-weight="800" letter-spacing="-2.5" fill="#F1F4F3">PiXfourge</text>
+  <text x="56" y="168" font-size="25" font-weight="500" fill="#9BA9B3">SpacePi X4 firmware patcher</text>
+  <text x="56" y="228" font-size="21" fill="#C9D3D9">Factory 85°C to 95°C,</text>
+  <text x="56" y="256" font-size="21" fill="#C9D3D9">with your own boot screen.</text>
+
+  <g font-size="19" fill="#C9D3D9">
+    <text x="450" y="88">Factory</text>
+    <text x="450" y="138">Beta</text>
+    <text x="450" y="188" font-weight="700" fill="#F1F4F3">PiXfourge</text>
+  </g>
+  <g>
+    <rect x="560" y="70" width="250" height="26" rx="6" fill="#2D3944" opacity=".7"/>
+    <rect x="560" y="120" width="250" height="26" rx="6" fill="#2D3944" opacity=".7"/>
+    <rect x="560" y="170" width="250" height="26" rx="6" fill="#2D3944" opacity=".7"/>
+    <path d="M560 70h147.7v26H560z M560 120h166.2v26H560z M560 170h184.6v26H560z" fill="url(#heat)"/>
+    <rect x="744.6" y="64" width="65.4" height="138" fill="url(#hatch)"/>
+    <line x1="744.6" y1="62" x2="744.6" y2="204" stroke="#9BA9B3" stroke-width="2" stroke-dasharray="5 4"/>
+  </g>
+  <g font-size="26" font-weight="800" text-anchor="end">
+    <text x="860" y="91" fill="#F1F4F3">85°</text>
+    <text x="860" y="141" fill="#F1F4F3">90°</text>
+    <text x="860" y="191" fill="#F27A62">95°</text>
+  </g>
+  <text x="560" y="232" font-size="15" fill="#9BA9B3">Hatched: above 95°C, untested</text>
+</svg>

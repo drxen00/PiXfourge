@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 270" width="900" height="270" role="img" aria-labelledby="wt wd" font-family="'Segoe UI',Helvetica,Arial,sans-serif">
+  <title id="wt">Alpha firmware. No warranty.</title>
+  <desc id="wd">Long-term testing at high temperature is not finished. Stay nearby for your first runs and keep the dryer off flammable surfaces.</desc>
+  <defs>
+    <pattern id="hz" width="40" height="40" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)"><rect width="20" height="40" fill="#F5C518"/><rect x="20" width="20" height="40" fill="#16181A"/></pattern>
+    <clipPath id="r"><rect width="900" height="270" rx="18"/></clipPath>
+  </defs>
+  <g clip-path="url(#r)">
+    <rect width="900" height="270" fill="#16181A"/>
+    <rect width="900" height="26" fill="url(#hz)"/>
+    <rect y="244" width="900" height="26" fill="url(#hz)"/>
+    <rect y="26" width="900" height="218" fill="#A8301A"/>
+  </g>
+  <rect x="2" y="2" width="896" height="266" rx="17" fill="none" stroke="#16181A" stroke-width="4"/>
+  <g transform="translate(52 62)">
+    <path d="M64 6 124 118H4Z" fill="#F5C518" stroke="#16181A" stroke-width="7" stroke-linejoin="round"/>
+    <rect x="58" y="44" width="12" height="36" rx="6" fill="#16181A"/>
+    <circle cx="64" cy="98" r="7" fill="#16181A"/>
+  </g>
+  <text x="212" y="112" font-size="60" font-weight="900" letter-spacing="-1.5" fill="#FFFFFF">Alpha firmware.</text>
+  <text x="212" y="170" font-size="60" font-weight="900" letter-spacing="-1.5" fill="#FFFFFF">No warranty.</text>
+  <text x="212" y="205" font-size="21" fill="#FFE3DA">Long-term high-temperature testing isn't finished.</text>
+  <text x="212" y="231" font-size="21" fill="#FFE3DA">Stay nearby for early runs. Keep it off flammable surfaces.</text>
+</svg>
