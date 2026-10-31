@@ -30,7 +30,7 @@ Open the page, drop in a file, download a new one. Everything runs inside your b
 | **A SpacePi X4** | The dual-chamber Creality dryer. This isn't for the X4L, which has different hardware and firmware. |
 | **The beta firmware file** | `v0.2.9_3.1_cspx4.lcd` (4,161,192 bytes) from Creality. This is *not* the retail firmware on Creality's download page; that's a different build and can't be patched. If you don't have it yet, ask [@gunfuzled](https://x.com/gunfuzled) where to get it. |
 | **A microSD card** | And a way to plug it into your computer. |
-| **A web browser** | Chrome, Edge, Firefox or Safari. |
+| **A web browser** | Chrome, Edge, Firefox, Safari, or any other modern browser. |
 
 > [!NOTE]
 > **You don't need to flash the beta first.** If your dryer is still on factory firmware (85°C maximum), that's fine. The beta file is only the starting point PiXfourge patches. The file you flash replaces whatever is on the dryer now.
