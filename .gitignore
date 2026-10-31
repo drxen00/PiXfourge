@@ -11,3 +11,6 @@ __pycache__/
 *$py.class
 .venv/
 venv/
+
+# Node test tooling
+node_modules/

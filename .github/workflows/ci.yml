@@ -41,16 +41,28 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Check that index.html's script parses and makes no outside requests
-        run: |
-          node -e "
-            const h = require('fs').readFileSync('index.html', 'utf8');
-            const m = h.match(/<script>([\\s\\S]*)<\\/script>/);
-            if (!m) throw new Error('no script found');
-            new Function(m[1]);
-            if (/fonts\\.(googleapis|gstatic)/.test(h)) throw new Error('index.html should not load outside fonts');
-            console.log('index.html script parses and loads nothing external');
-          "
+      - name: Check that index.html's script parses and loads nothing from outside
+        run: node tests/check-static.cjs
 
       - name: Check that index.html matches its template
         run: python3 site/build.py --check
+
+  site-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install Playwright and Chromium
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Build with the page and the reference script on a synthetic firmware file, and compare
+        run: npm test

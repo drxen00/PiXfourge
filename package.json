@@ -1,0 +1,12 @@
+{
+  "name": "pixfourge",
+  "private": true,
+  "description": "Test tooling for the Pi-Xfourge page. The page itself has no dependencies.",
+  "scripts": {
+    "check": "node tests/check-static.cjs && python3 site/build.py --check",
+    "test": "node tests/verify-site.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
+  }
+}
