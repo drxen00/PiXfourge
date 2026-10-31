@@ -1,10 +1,10 @@
 <div align="center">
 
-<img src="assets/banner.svg" alt="PiXfourge: SpacePi X4 firmware patcher. Maximum drying temperature goes from 85°C factory, to 90°C beta, to 95°C with PiXfourge." width="100%">
+<img src="assets/banner.svg" alt="Pi-Xfourge: SpacePi X4 firmware patcher. Maximum drying temperature goes from 85°C factory, to 90°C beta, to 95°C with Pi-Xfourge." width="100%">
 
 ### Raise your SpacePi X4's limit from the factory 85°C to 95°C.<br>No tools to install, no code to run.
 
-**[Open the tool](https://drxen00.github.io/PiXfourge/)** &nbsp;·&nbsp; [What you need](#what-you-need) &nbsp;·&nbsp; [How to use it](#how-to-use-it) &nbsp;·&nbsp; [Is it safe?](#is-it-safe) &nbsp;·&nbsp; [Troubleshooting](#troubleshooting)
+**[Open the tool](https://drxen00.github.io/PiXfourge/)** &nbsp;·&nbsp; [What you need](#what-you-need) &nbsp;·&nbsp; [How to use it](#how-to-use-it) &nbsp;·&nbsp; [Check a file](#check-a-firmware-file) &nbsp;·&nbsp; [Is it safe?](#is-it-safe) &nbsp;·&nbsp; [Troubleshooting](#troubleshooting)
 
 ![Status: alpha](https://img.shields.io/badge/status-alpha-D9452B?style=for-the-badge)
 ![Runs in your browser](https://img.shields.io/badge/runs%20in-your%20browser-2C8C99?style=for-the-badge)
@@ -33,7 +33,7 @@ Open the page, drop in a file, download a new one. Everything runs inside your b
 | **A web browser** | Chrome, Edge, Firefox, Safari, or any other modern browser. |
 
 > [!NOTE]
-> **You don't need to flash the beta first.** If your dryer is still on factory firmware (85°C maximum), that's fine. The beta file is only the starting point PiXfourge patches. The file you flash replaces whatever is on the dryer now.
+> **You don't need to flash the beta first.** If your dryer is still on factory firmware (85°C maximum), that's fine. The beta file is only the starting point Pi-Xfourge patches. The file you flash replaces whatever is on the dryer now.
 
 ## How to use it
 
@@ -51,7 +51,7 @@ Open the page, drop in a file, download a new one. Everything runs inside your b
 
 <br>
 
-Download `index.html` from this repo and open it in your browser. Everything it needs is inside that one file. The only thing that won't load offline is the web font, and the page falls back to your system fonts.
+Download `index.html` from this repo and open it in your browser. Everything it needs, fonts included, is inside that one file. The page makes no network requests at all.
 
 </details>
 
@@ -66,16 +66,27 @@ Flash a retail firmware file from [Creality](https://www.creality.com/download/c
 
 ## Custom boot screens
 
-Any PNG, JPG, GIF or WebP works. PiXfourge resizes it to the display's 320×240 and stores it in a fixed block of unused space in the firmware: **61,056 bytes**.
+Any PNG, JPG, GIF or WebP works. Pi-Xfourge resizes it to the display's 320×240 and stores it in a fixed block of unused space in the firmware: **61,056 bytes**.
 
 - **Flat colors fit easily.** Logos, line art and text use little space. Photos, gradients and anything dithered use a lot.
 - **The meter tells you.** If it goes red, the build is blocked so nothing gets overwritten. Raise **Simplify colors**, or use a simpler image.
 - **Sizing:** *Fit* shows the whole image, *Fill* crops the edges, and *Use as-is* needs exactly 320×240.
 - **The warning line always shows.** "ALPHA FIRMWARE: NO WARRANTY, EXPRESS OR IMPLIED" is drawn across the bottom edge for the 2 seconds the boot screen is up. In *Fit* mode the bottom 16 pixels are left clear for it.
 
+## Check a firmware file
+
+Not sure what a `.lcd` file is, or whether a download got damaged? Scroll to **Check any firmware file** at the bottom of the tool and drop it in. It tells you:
+
+- whether it's the stock Creality beta, a Pi-Xfourge build, an older Creality release (by size), or something it doesn't recognize
+- the temperature limits and version inside it
+- whether the file's four internal checksums are intact
+- its SHA-256, and whether that matches a known build
+
+If the screen's limit and the heater controller's limit disagree, or the checksums are broken, it says **Don't flash this file**. Nothing is uploaded.
+
 ## Is it safe?
 
-PiXfourge changes two limits and nothing else important:
+Pi-Xfourge changes two limits and nothing else important:
 
 - **The temperature limit** goes up to 95°C, in both the display firmware and the heater-controller firmware. (Factory firmware stops at 85°C, and Creality's beta at 90°C.)
 - **The boot screen and the version number** (V3.0.1_0).
@@ -117,7 +128,7 @@ That's when it's built from a beta with SHA-256 `012e12bc4cc7cd86b4f0226d3a4624b
 <td width="120" valign="top" align="center"><img src="assets/confuzled_logo.jpg" alt="confuzled's logo" width="96"></td>
 <td valign="top">
 
-The reverse-engineering, the temperature limits and the patch are all the work of **confuzled** ([@gunfuzled](https://x.com/gunfuzled) on X, [confuzled-dev](https://github.com/confuzled-dev) on GitHub). PiXfourge is just a friendlier way to use it.
+The reverse-engineering, the temperature limits and the patch are all the work of **confuzled** ([@gunfuzled](https://x.com/gunfuzled) on X, [confuzled-dev](https://github.com/confuzled-dev) on GitHub). Pi-Xfourge is just a friendlier way to use it.
 
 No pressure, but if this saved you time and you're ordering filament or parts anyway, you can support him through his referral links. He earns a commission if you buy through them.
 
@@ -132,7 +143,7 @@ No pressure, but if this saved you time and you're ordering filament or parts an
 ## Credits and notes
 
 - The patch logic, picture format and checksums are ported from [confuzled-dev/SpacePiX4_cfw](https://github.com/confuzled-dev/SpacePiX4_cfw), and this repo keeps its full commit history. As of this writing, that project has no license file.
-- PiXfourge is an unofficial community tool and isn't affiliated with Creality. Provided as is, with no warranty.
+- Pi-Xfourge is an unofficial community tool and isn't affiliated with Creality. Provided as is, with no warranty.
 
 <details>
 <summary><b>For developers</b></summary>
@@ -141,12 +152,13 @@ No pressure, but if this saved you time and you're ordering filament or parts an
 
 | Path | What it is |
 | --- | --- |
-| `index.html` | The whole tool: page, styles, patcher and the default boot screen in one file. |
+| `index.html` | The whole tool: page, styles, patcher, file checker, fonts and the default boot screen in one file. |
 | `docs/CFW_TECHNICAL_README.md` | The original project README: patch table, offsets, firmware history. |
 | `docs/` | The original reverse-engineering notes. |
 | `scripts/build_3.0.1_0.js` | The original command-line builder. `node scripts/build_3.0.1_0.js` still works if you put the beta in `firmware/`. |
 | `assets/default_splash.png` | The 320×240 default boot screen, before the warning line is added. |
 | `assets/banner.svg`, `assets/warning.svg` | The graphics at the top of this README. |
+| `assets/social-preview.svg`, `.png` | The 1280×640 image for the repo's social preview. |
 | `tests/verify-site.cjs` | Drives `index.html` in a headless browser and checks the output against the reference build. |
 
 To run the test: `npm i playwright && npx playwright install chromium`, then `node tests/verify-site.cjs path/to/v0.2.9_3.1_cspx4.lcd`.
