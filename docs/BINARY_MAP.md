@@ -1,5 +1,7 @@
 # Binary Map & Structural Specification
 
+> **PiXfourge note:** this map is from confuzled-dev's original analysis and was written against the older releases (`v0.2.5_0.5`, `v0.3.0_0.7`). Its offsets don't apply to the `v0.2.9_3.1_cspx4` beta that Pi-Xfourge patches: there, the MCU section starts at `0x3F256C` and the picture table at `0x054A31` (not `0x0581F1`). For the beta, use `CFW_TECHNICAL_README.md` and `scripts/build_3.0.1_0.js`.
+
 ## 1. Container Header Format (`CT2E`)
 - **Offset `0x00 - 0x01`:** Unknown flags (`0x0001`)
 - **Offset `0x02 - 0x05`:** Magic ASCII signature `CT2E` (`0x54430100` / `0x43543245`)

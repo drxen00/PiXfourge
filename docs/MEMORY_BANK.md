@@ -1,5 +1,7 @@
 # Project Memory Bank: Creality SpacePi X4 Firmware Analysis
 
+> **PiXfourge note:** these are confuzled-dev's working notes from the original project, kept for history. Some offsets in them (for example the picture table at `0x0581F1` and Pic 81 at `0x22B70B`) come from older firmware releases and don't apply to the `v0.2.9_3.1_cspx4` beta. For the beta, use `CFW_TECHNICAL_README.md` and `scripts/build_3.0.1_0.js`.
+
 ## Active Context & Status
 - **Target Device:** Creality SpacePi X4 Multi-Chamber Filament Dryer (`DB-05`).
 - **Active Comparison:** `v0.2.5_0.5` → `v0.3.0_0.7` → `v0.3.0_0.8` → `v0.2.9_1.1_cspx4` → Latest `v0.2.9_3.1_cspx4`.

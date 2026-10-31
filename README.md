@@ -159,8 +159,10 @@ No pressure, but if this saved you time and you're ordering filament or parts an
 | `assets/default_splash.png` | The 320×240 default boot screen, before the warning line is added. |
 | `assets/banner.svg`, `assets/warning.svg` | The graphics at the top of this README. |
 | `assets/social-preview.svg`, `.png` | The 1280×640 image for the repo's social preview. |
-| `tests/verify-site.cjs` | Drives `index.html` in a headless browser and checks the output against the reference build. |
+| `tests/verify-site.cjs` | Drives `index.html` in a headless browser and checks that its output is byte-identical to the reference script's. |
+| `tests/make-fixture.cjs` | Makes a synthetic stand-in for the beta so the test can run without Creality's file. It is not real firmware. |
+| `tests/check-static.cjs` | Checks that the page's script parses and that the page loads nothing from outside. |
 
-To run the test: `npm i playwright && npx playwright install chromium`, then `node tests/verify-site.cjs path/to/v0.2.9_3.1_cspx4.lcd`.
+To run the tests: `npm ci && npx playwright install chromium`, then `npm test` (synthetic file, which is what CI runs) or `node tests/verify-site.cjs path/to/v0.2.9_3.1_cspx4.lcd` (the real beta, which also checks the known output fingerprint). `npm run check` runs the static checks.
 
 </details>

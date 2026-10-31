@@ -19,14 +19,19 @@ repo keeps that project's full history. Display name: **Pi-Xfourge**. Repo slug:
   implementation; the page's patcher is a port of it. `build.py` also pulls its 5x7 font table.
 - `docs/CFW_TECHNICAL_README.md`: the original README (patch table, offsets, firmware history).
 - `assets/banner.svg`, `warning.svg`, `social-preview.svg/.png`: README and repo graphics.
-- `tests/verify-site.cjs`: headless-browser test of the real page.
+- `tests/verify-site.cjs`: headless-browser test of the real page. It runs the page and the reference
+  script on the same input and requires byte-identical output. `tests/make-fixture.cjs` makes the
+  synthetic stand-in for the beta it uses by default (not real firmware; never flash it).
+- `tests/check-static.cjs`: no-browser check that the page's script parses and nothing loads from outside
+  (only `<a href>` links may point outside).
 
 ## Commands
 
 - Rebuild the page: `python3 site/build.py`
-- Test (needs the real beta file, which is not in the repo):
-  `npm i playwright && npx playwright install chromium`, then
-  `node tests/verify-site.cjs /path/to/v0.2.9_3.1_cspx4.lcd`
+- Static checks: `npm run check` (or `make check`).
+- Test: `npm ci && npx playwright install chromium`, then `npm test` (synthetic beta, what CI runs) or
+  `node tests/verify-site.cjs /path/to/v0.2.9_3.1_cspx4.lcd` (real beta, also checks the SHA below).
+  The synthetic run proves the page matches the reference script; only the real beta proves both are right.
 - Reference outputs: the beta's SHA-256 is
   `012e12bc4cc7cd86b4f0226d3a4624b83e01a9770085327af31e2f809f91435a`. Built with the default boot
   screen, the output must be byte-identical to `node scripts/build_3.0.1_0.js` and have SHA-256
@@ -56,7 +61,8 @@ repo keeps that project's full history. Display name: **Pi-Xfourge**. Repo slug:
    IMPLIED" line on the boot screen.
 3. **Output must stay identical to the reference script** for the default boot screen. Re-run the test
    after any change to the patcher, encoder or checksum code.
-4. **The page makes no network requests** (fonts are embedded). CI enforces this.
+4. **The page makes no network requests** (fonts are embedded). CI enforces this with
+   `tests/check-static.cjs` and the browser test.
 5. **Never commit firmware `.lcd` files.** They are Creality's and are gitignored.
 6. **Do not write text in confuzled's voice, or put words in his mouth.** The README talks about him in
    the third person, modestly. His logo and his three affiliate links (Siraya Tech, Polymaker, VoidSpec,
@@ -81,5 +87,8 @@ repo keeps that project's full history. Display name: **Pi-Xfourge**. Repo slug:
   to say whether and where the beta file may be listed.
 - Known typo in his README (corrected in `docs/CFW_TECHNICAL_README.md`): the Pic 81 descriptor is at
   `0x0551CD`, not `0x0551E5`.
-- Ideas, not started: bundle a hardware photo and verification screenshots in the README; a Dockerfile
-  that has Node 22 for the CLI builder (the existing one is Python only; untested here).
+- Ideas, not started: bundle a hardware photo and verification screenshots in the README.
+- The Dockerfile has Node 22 for the CLI builder. Node and the pip step were tested; the apt packages
+  (`binwalk`, `radare2`) couldn't be, because the Claude session's network blocks Debian mirrors.
+- `docs/BINARY_MAP.md`, `MEMORY_BANK.md` and `LLM_PROMPT_BOOK.md` are the author's notes on older firmware,
+  labeled as such. Their offsets (e.g. picture table `0x0581F1`) don't apply to the beta.
